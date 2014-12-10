@@ -17,6 +17,10 @@ $IPT -P OUTPUT DROP
 $IPT -A INPUT -i lo -j ACCEPT
 $IPT -A OUTPUT -o lo -j ACCEPT
 
+# Allow current established and related connections
+$IPT -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+$IPT -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
+
 # Drop packages with incoming fragments
 $IPT -A INPUT -f -j DROP
 
@@ -50,6 +54,10 @@ $IPT -A OUTPUT -o $EXT_IF -p udp --dport 53 -m state --state NEW,ESTABLISHED -j 
 $IPT -A INPUT -i $EXT_IF -p udp --sport 53 -m state --state ESTABLISHED -j ACCEPT
 $IPT -A OUTPUT -o $EXT_IF -p tcp --dport 53 -m state --state NEW,ESTABLISHED -j ACCEPT
 $IPT -A INPUT -i $EXT_IF -p tcp --sport 53 -m state --state ESTABLISHED -j ACCEPT
+
+# Allow outgoing SSH
+$IPT -A OUTPUT -o $EXT_IF -p tcp --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A INPUT -i $EXT_IF -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
 
 # Allow incoming HTTP
 $IPT -A INPUT -i $EXT_IF -p tcp --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT
