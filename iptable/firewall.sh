@@ -3,8 +3,7 @@
 # Declare some variables
 IPT=$(which iptables)
 
-INT_ETH="eth0" 
-EXT_ETH="eth1"
+EXT_IF=$(/sbin/ip route | grep default | awk '{print $5}')
 
 # Delete all existing rules
 $IPT -F
@@ -33,5 +32,5 @@ $IPT -A OUTPUT -o $EXT_ETH -p tcp --dport 53 -m state --state NEW,ESTABLISHED -j
 $IPT -A INPUT -i $EXT_ETH -p tcp --sport 53 -m state --state ESTABLISHED -j ACCEPT
 
 # Allow incoming HTTP
-$IPT -A INPUT -i $EXT_ETH -p tcp --dport 8080 -m state --state NEW,ESTABLISHED -j ACCEPT
-$IPT -A OUTPUT -o $EXT_ETH -p tcp --sport 8080 -m state --state ESTABLISHED -j ACCEPT
+$IPT -A INPUT -i $EXT_ETH -p tcp --dport 80 -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A OUTPUT -o $EXT_ETH -p tcp --sport 80 -m state --state ESTABLISHED -j ACCEPT
