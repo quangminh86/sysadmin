@@ -2,8 +2,11 @@
 
 ### Declare some variables
 IPT=$(which iptables)
-EXT_IF=$(/sbin/ip route | grep default | awk '{print $5}')
 
+EXT_IF=$(/sbin/ip route | grep default | awk '{print $5}')
+INT_IF=$(ip link show | grep "state UP" | grep -v $EXT_IF | awk '{print $2}' | cut -d':' -f1)
+
+### List incoming and outgoing TCP & UDP ports
 IN_TCP="53 80 443"
 IN_UDP=""
 OUT_TCP="22 53"
@@ -25,6 +28,12 @@ $IPT -t mangle -X
 ### Allow loopback
 $IPT -A INPUT -i lo -j ACCEPT
 $IPT -A OUTPUT -o lo -j ACCEPT
+
+### Allow LAN connection
+for eth in $INT_IF; do
+	$IPT -A INPUT -i $eth -j ACCEPT
+	$IPT -A OUTPUT -o $eth -j ACCEPT
+done
 
 ### Allow current established and related connections
 $IPT -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
