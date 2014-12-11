@@ -110,7 +110,7 @@ sub main {
 	$VERSION = '0.7.1';
 
 	my $np = Nagios::Plugin->new(
-		usage => "Usage: %s -D <data_center> | -H <host_name> [ -C <cluster_name> ] [ -N <vm_name> ]\n"
+		usage => "Usage: %s -D <data_center> | -H <host_name> [ -P <port> ] [ -C <cluster_name> ] [ -N <vm_name> ]\n"
 		. "    -u <user> -p <pass> | -f <authfile>\n"
 		. "    -l <command> [ -s <subcommand> ] [ -T <timeshift> ] [ -i <interval> ]\n"
 		. "    [ -x <black_list> ] [ -o <additional_options> ]\n"
@@ -354,6 +354,13 @@ sub main {
 		. '   ESX or ESXi hostname.',
 		required => 0,
 	);
+
+    $np->add_arg(
+        spec => 'port|P=s',
+        help => "-P, --port=<port>\n"
+        . '   ESX or ESXi port.',
+        required => 0,
+    );
 
 	$np->add_arg(
 		spec => 'cluster|C=s',
@@ -608,7 +615,15 @@ sub main {
 			$np->nagios_exit(CRITICAL, "No Host or Datacenter specified");
 		}
 
-		$host_address .= ":443" if (index($host_address, ":") == -1);
+		my $port = $np->opts->port;
+		
+		if ($port eq "")
+		{
+			$port = "443";
+		}
+
+		$host_address .= ":$port" if (index($host_address, ":") == -1);
+
 		if (not $host_address =~ '^.*://.*$') {
 			$host_address = "https://" . $host_address . "/sdk/webService";
 		}
