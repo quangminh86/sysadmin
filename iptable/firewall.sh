@@ -7,7 +7,7 @@ EXT_IF=$(/sbin/ip route | grep default | awk '{print $5}')
 INT_IF=$(ip link show | grep "state UP" | grep -v $EXT_IF | awk '{print $2}' | cut -d':' -f1)
 
 ### List incoming and outgoing TCP & UDP ports
-IN_TCP="53 80 443"
+IN_TCP="80 443"
 IN_UDP=""
 OUT_TCP="22 53"
 OUT_UDP="53 123"
@@ -54,7 +54,7 @@ $IPT -A OUTPUT -p icmp -j DROP
 ### Log and drop syn flooding
 $IPT -N syn-flood
 $IPT -A syn-flood -m limit --limit 100/second --limit-burst 150 -j RETURN
-$IPT -A syn-flood -j LOG --log-prefix "SYN flood: "
+$IPT -A syn-flood -j LOG --log-prefix "SYN flood:"
 $IPT -A syn-flood -j DROP
 
 ### Allow incoming SSH
@@ -79,9 +79,9 @@ for port in $OUT_TCP; do
 done
 
 for port in $OUT_UDP; do
-	$IPT -A OUTPUT -o $EXT_IF -p tcp --dport $port -m state --state NEW,ESTABLISHED -j ACCEPT
-	$IPT -A INPUT -i $EXT_IF -p tcp --sport $port -m state --state ESTABLISHED -j ACCEPT
+	$IPT -A OUTPUT -o $EXT_IF -p udp --dport $port -m state --state NEW,ESTABLISHED -j ACCEPT
+	$IPT -A INPUT -i $EXT_IF -p udp --sport $port -m state --state ESTABLISHED -j ACCEPT
 done
 
 ### List rules
-$IPT -L -v
+$IPT -L -n
