@@ -5,13 +5,18 @@ IPT=$(which iptables)
 
 EXT_IF=$(/sbin/ip route | grep default | awk '{print $5}')
 
-# Delete all existing rules
-$IPT -F
-
 # Set default chain policies
 $IPT -P INPUT DROP
 $IPT -P FORWARD DROP
 $IPT -P OUTPUT DROP
+
+# Delete all existing rules
+$IPT -F
+$IPT -X
+$IPT -t nat -F
+$IPT -t nat -X
+$IPT -t mangle -F
+$IPT -t mangle -X
 
 # Allow loopback
 $IPT -A INPUT -i lo -j ACCEPT
