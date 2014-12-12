@@ -9,6 +9,7 @@ DNS="8.8.8.8 8.8.4.4"
 SERV_TCP="25 53 80 443"
 SERV_UDP="53 123"
 HI_PORTS="1024:65535"
+SSH_PORT="22"
 
 EXT_IF=`/sbin/route | grep -i 'default' | awk '{print $8}'`
 INT_IF="eth1"
@@ -38,8 +39,8 @@ $IPT -A INPUT -i lo -j ACCEPT
 $IPT -A OUTPUT -o lo -j ACCEPT
 
 # unlimited LAN
-$IPT -A INPUT -i eth1 -j ACCEPT
-$IPT -A OUTPUT -o eth1 -j ACCEPT
+$IPT -A INPUT -i $INT_IF -j ACCEPT
+$IPT -A OUTPUT -o $INT_IF -j ACCEPT
 
 ## Block IP
 if [ -f blacklist.txt ];
@@ -58,51 +59,13 @@ $IPT -I OUTPUT -j $SPAMLIST
 $IPT -I FORWARD -j $SPAMLIST
 fi
 
-# Block sync
-$IPT -A INPUT -i ${EXT_IF} -p tcp ! --syn -m state --state NEW  -m limit --limit 5/m --limit-burst 7 -j LOG --log-level 4 --log-prefix "Drop Sync"
-$IPT -A INPUT -i ${EXT_IF} -p tcp ! --syn -m state --state NEW -j DROP
-
-# Block Fragments
-$IPT -A INPUT -i ${EXT_IF} -f  -m limit --limit 5/m --limit-burst 7 -j LOG --log-level 4 --log-prefix "Fragments Packets"
-$IPT -A INPUT -i ${EXT_IF} -f -j DROP
-
-# Block bad stuff
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags ALL FIN,URG,PSH -j DROP
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags ALL ALL -j DROP
-
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags ALL NONE -m limit --limit 5/m --limit-burst 7 -j LOG --log-level 4 --log-prefix "NULL Packets"
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags ALL NONE -j DROP # NULL packets
-
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
-
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags SYN,FIN SYN,FIN -m limit --limit 5/m --limit-burst 7 -j LOG --log-level 4 --log-prefix "XMAS Packets"
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP #XMAS
-
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags FIN,ACK FIN -m limit --limit 5/m --limit-burst 7 -j LOG --log-level 4 --log-prefix "Fin Packets Scan"
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags FIN,ACK FIN -j DROP # FIN packet scans
-
-$IPT  -A INPUT -i ${EXT_IF} -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j DROP
-
 # Allow current established and related connections
 $IPT -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 $IPT -A OUTPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
 
 # Allow incoming SSH
-$IPT -A INPUT -i $EXT_IF -p tcp --dport 22 -m state --state NEW,ESTABLISHED -j ACCEPT
-$IPT -A OUTPUT -o $EXT_IF -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
-
-#Block ssh brute fore
-$IPT -N sshd
-$IPT -A sshd -j ACCEPT
-$IPT -N SSH_CHECK
-$IPT -A SSH_CHECK -m recent --set --name SSH
-$IPT -A INPUT -p tcp --syn --dport 22 -m state --state NEW -j SSH_CHECK
-
-$IPT -A SSH_CHECK -m recent --update --seconds 60 --hitcount 4 --name SSH -j LOG --log-prefix "SSH_BRUTE: "
-$IPT -A SSH_CHECK -m recent --update --seconds 60 --hitcount 4 --name SSH -j DROP
-
-$IPT -A SSH_CHECK -m recent --update --seconds 60 --hitcount 3 --name SSH -j sshd
-$IPT -A OUTPUT -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
+$IPT -A INPUT -i $EXT_IF -p tcp --dport $SSH_PORT -m state --state NEW,ESTABLISHED -j ACCEPT
+$IPT -A OUTPUT -o $EXT_IF -p tcp --sport $SSH_PORT -m state --state ESTABLISHED -j ACCEPT
 
 # allow incomming ICMP ping pong stuff
 $IPT -A INPUT -p icmp --icmp-type 8 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
