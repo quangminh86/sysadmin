@@ -1,12 +1,15 @@
 #!/bin/bash
 
-### Declare some variables
+### Declare some options
+LAN="1" # this will set allow all connection from LAN
+
+### Declare some system variables
 IPT=$(which iptables)
 
 EXT_IF=$(/sbin/ip route | grep default | awk '{print $5}')
 INT_IF=$(ip link show | grep "state UP" | grep -v $EXT_IF | awk '{print $2}' | cut -d':' -f1)
 
-### List incoming and outgoing TCP & UDP ports
+### List incoming and outgoing TCP & UDP ports (22 is mandatory, not list here)
 IN_TCP="80 443"
 IN_UDP=""
 OUT_TCP="22 53"
@@ -30,10 +33,12 @@ $IPT -A INPUT -i lo -j ACCEPT
 $IPT -A OUTPUT -o lo -j ACCEPT
 
 ### Allow LAN connection
-for eth in $INT_IF; do
-	$IPT -A INPUT -i $eth -j ACCEPT
-	$IPT -A OUTPUT -o $eth -j ACCEPT
-done
+if [ "$LAN" = "1" ]; then
+	for eth in $INT_IF; do
+		$IPT -A INPUT -i $eth -j ACCEPT
+		$IPT -A OUTPUT -o $eth -j ACCEPT
+	done
+fi
 
 ### Allow current established and related connections
 $IPT -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT 
