@@ -69,7 +69,7 @@ $IPT -A INPUT -i $EXT_IF -p tcp --dport 22 -m state --state NEW,ESTABLISHED -j A
 $IPT -A OUTPUT -o $EXT_IF -p tcp --sport 22 -m state --state ESTABLISHED -j ACCEPT
 
 ### Allow good ip from whitelist file
-if [ "$ALLOW_WHITELIST" = "1" ]; then
+if [ "$WHITELIST_ALLOW" = "1" ]; then
 	echo "Allow good ips from whitelist"
 	$IPT -N acceptlist
 	good_ips=$(egrep -v -E "^#|^$" $white_list)
@@ -83,7 +83,7 @@ if [ "$ALLOW_WHITELIST" = "1" ]; then
 fi
 
 ### Block bad ip from blacklist file
-if [ "$BLOCK_BLACKLIST" = "1" ]; then
+if [ "$BLACKLIST_BLOCK" = "1" ]; then
 	echo "Block bad ips from blacklist"
 	$IPT -N droplist
 	bad_ips=$(egrep -v -E "^#|^$" $black_list)
