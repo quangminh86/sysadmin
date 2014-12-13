@@ -4,6 +4,7 @@
 LAN_ALLOW="1" # this will set allow all connection from LAN
 BLACKLIST_BLOCK="1" # enable block ips from blacklist
 WHITELIST_ALLOW="1" # enable allow ips from whitelist
+ICMP_ALLOW="1" # this will set allow icmp
 
 ### Declare some system variables
 IPT=$(which iptables)
@@ -136,11 +137,13 @@ $IPT -A INPUT -p tcp --tcp-flags ALL NONE -j DROP # Drop all NULL packets
 $IPT -A INPUT -p tcp ! --syn -m state --state NEW -j DROP # Drop all new connection are not SYN packets
 
 ### ICMP (PING) - Ping flood projection 1 per second
-echo "-> allow ping"
-$IPT -A INPUT -p icmp -m limit --limit 5/s --limit-burst 5 -j ACCEPT
-$IPT -A OUTPUT -p icmp -m limit --limit 5/s --limit-burst 5 -j ACCEPT
-$IPT -A INPUT -p icmp -j DROP
-$IPT -A OUTPUT -p icmp -j DROP
+if [ "$ICMP_ALLOW" = "1" ]; then
+	echo "-> allow ping"
+	$IPT -A INPUT -p icmp --icmp-type 8 -m limit --limit 5/s --limit-burst 5 -j ACCEPT
+	$IPT -A OUTPUT -p icmp --icmp-type 0 -m limit --limit 5/s --limit-burst 5 -j ACCEPT
+	$IPT -A INPUT -p icmp -j DROP
+	$IPT -A OUTPUT -p icmp -j DROP
+fi
 
 ### Log and drop syn flooding
 echo "-> log and drop syn flooding"
